@@ -4,10 +4,12 @@ import (
 	"database/sql"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"path"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 
 	"gopkg.in/yaml.v2"
@@ -289,6 +291,22 @@ func fixturesFromFiles(fileNames ...string) ([]*fixtureFile, error) {
 	}
 
 	return fixtureFiles, nil
+}
+
+func fixturesFromFileSystem(fs http.FileSystem, folderName string) ([]*fixtureFile, error) {
+	f, err := fs.Open(folderName)
+	if err != nil {
+		return nil, err
+	}
+
+	fileInfos, err := f.Readdir(-1)
+	f.Close()
+	if err != nil {
+		return nil, err
+	}
+	sort.Slice(fileInfos, func(i, j int) bool { return fileInfos[i].Name() < fileInfos[j].Name() })
+
+	return fixturesFromFileInfos(fileInfos, folderName)
 }
 
 func fixturesFromFileInfos(fileInfos []os.FileInfo, folderName string) ([]*fixtureFile, error) {
