@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path"
 	"path/filepath"
 	"regexp"
@@ -261,27 +262,12 @@ func (f *fixtureFile) buildInsertSQL(h Helper, record map[interface{}]interface{
 }
 
 func fixturesFromFolder(folderName string) ([]*fixtureFile, error) {
-	var files []*fixtureFile
-	fileinfos, err := ioutil.ReadDir(folderName)
+	fileInfos, err := ioutil.ReadDir(folderName)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, fileinfo := range fileinfos {
-		fileExt := filepath.Ext(fileinfo.Name())
-		if !fileinfo.IsDir() && (fileExt == ".yml" || fileExt == ".yaml") {
-			fixture := &fixtureFile{
-				path:     path.Join(folderName, fileinfo.Name()),
-				fileName: fileinfo.Name(),
-			}
-			fixture.content, err = ioutil.ReadFile(fixture.path)
-			if err != nil {
-				return nil, err
-			}
-			files = append(files, fixture)
-		}
-	}
-	return files, nil
+	return fixturesFromFileInfos(fileInfos, folderName)
 }
 
 func fixturesFromFiles(fileNames ...string) ([]*fixtureFile, error) {
@@ -300,6 +286,30 @@ func fixturesFromFiles(fileNames ...string) ([]*fixtureFile, error) {
 			return nil, err
 		}
 		fixtureFiles = append(fixtureFiles, fixture)
+	}
+
+	return fixtureFiles, nil
+}
+
+func fixturesFromFileInfos(fileInfos []os.FileInfo, folderName string) ([]*fixtureFile, error) {
+	var (
+		fixtureFiles []*fixtureFile
+		err          error
+	)
+
+	for _, fileInfo := range fileInfos {
+		fileExt := filepath.Ext(fileInfo.Name())
+		if !fileInfo.IsDir() && (fileExt == ".yml" || fileExt == ".yaml") {
+			fixture := &fixtureFile{
+				path:     path.Join(folderName, fileInfo.Name()),
+				fileName: fileInfo.Name(),
+			}
+			fixture.content, err = ioutil.ReadFile(fixture.path)
+			if err != nil {
+				return nil, err
+			}
+			fixtureFiles = append(fixtureFiles, fixture)
+		}
 	}
 
 	return fixtureFiles, nil
