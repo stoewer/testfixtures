@@ -74,6 +74,22 @@ func NewFiles(db *sql.DB, helper Helper, fileNames ...string) (*Context, error) 
 	return c, nil
 }
 
+// NewFileSystem creates a context for all fixtures in a given folder in a http.FileSystem.
+//		NewFileSystem(db, &PostgreSQL{}, fs, "fixtures")
+func NewFileSystem(db *sql.DB, helper Helper, fs http.FileSystem, folderName string) (*Context, error) {
+	fixtures, err := fixturesFromFileSystem(fs, folderName)
+	if err != nil {
+		return nil, err
+	}
+
+	c, err := newContext(db, helper, fixtures)
+	if err != nil {
+		return nil, err
+	}
+
+	return c, nil
+}
+
 func newContext(db *sql.DB, helper Helper, fixtures []*fixtureFile) (*Context, error) {
 	c := &Context{
 		db:            db,
